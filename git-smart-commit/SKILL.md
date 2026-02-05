@@ -1,6 +1,7 @@
 ---
 name: git-smart-commit
 description: Tool to make conventional git commits using AI by looking at the local changes
+disable-model-invocation: true
 ---
 
 # Git Smart Commit
