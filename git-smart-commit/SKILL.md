@@ -24,7 +24,32 @@ The goal is to offload the cognitive burden from the user—letting AI review an
 - Run `git diff` for unstaged changes
 - If nothing is staged, ask the user if they want to stage all changes or select specific files
 
-### 3. Generate Commit Message
+### 3. Format Changed Files
+- **Only format files that are part of the current changeset** — never run formatters across the entire repo
+- Collect the list of changed files from `git diff --name-only` (unstaged) and `git diff --staged --name-only` (staged)
+- Detect which formatters are configured in the repo by checking for config files:
+  | Formatter | Config indicators |
+  |-----------|-------------------|
+  | Prettier | `.prettierrc`, `.prettierrc.*`, `prettier.config.*`, `"prettier"` key in `package.json` |
+  | ESLint | `.eslintrc`, `.eslintrc.*`, `eslint.config.*` |
+  | Black | `pyproject.toml` (`[tool.black]`), `.black.cfg`, `setup.cfg` (`[tool:black]`) |
+  | Ruff | `pyproject.toml` (`[tool.ruff]`), `ruff.toml`, `.ruff.toml` |
+  | gofmt / goimports | `go.mod` (Go projects use `gofmt` by default) |
+  | rustfmt | `rustfmt.toml`, `.rustfmt.toml`, `Cargo.toml` |
+  | clang-format | `.clang-format` |
+  | shfmt | `.editorconfig` with shell settings, or presence of shell scripts |
+- Run the detected formatter(s) targeting **only** the changed files, e.g.:
+  - `npx prettier --write <file1> <file2> ...`
+  - `npx eslint --fix <file1> <file2> ...`
+  - `black <file1> <file2> ...`
+  - `ruff format <file1> <file2> ...`
+  - `gofmt -w <file1> <file2> ...`
+  - `rustfmt <file1> <file2> ...`
+- If no recognized formatter config is found, skip this step silently
+- After formatting, re-stage any previously staged files that were modified by the formatter (`git add <files>`)
+- If the formatter produces changes, briefly note it to the user (e.g., "Formatted 3 files with Prettier")
+
+### 4. Generate Commit Message
 
 #### Commit Types
 Choose the appropriate type based on the changes:
@@ -78,12 +103,12 @@ Fixes #234
 chore: upgrade dependencies to latest versions
 ```
 
-### 4. Handle Multiple Logical Changes
+### 5. Handle Multiple Logical Changes
 - If changes span unrelated concerns, ask the user if they want:
   - Multiple focused commits (preferred)
   - A single combined commit
 
-### 5. Commit and Push
+### 6. Commit and Push
 - Stage the appropriate files if not already staged
 - Create the commit with the generated message
 - **Ask before pushing**: "Ready to push to remote?" (don't auto-push without confirmation)
